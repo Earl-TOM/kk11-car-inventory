@@ -44,8 +44,8 @@ export default function ForcePasswordResetPage() {
 
     setSubmitting(true);
 
-    await passwordResetService.changePasswordWithTemporary(currentPassword, newPassword);
-    await passwordResetService.completeMyReset(currentPassword);
+    await passwordResetService.changePassword(currentPassword, newPassword);
+    await passwordResetService.completeMyReset();
 
     setSubmitting(false);
     toast.success("Password updated successfully");

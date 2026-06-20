@@ -3,7 +3,6 @@ import { PasswordResetRequest, PasswordResetRequestStatus } from "../types";
 type UpdateResetRequestPayload = {
   status?: PasswordResetRequestStatus;
   adminNote?: string;
-  generateTemporaryPassword?: boolean;
 };
 
 type MyResetRequirement = {
@@ -51,7 +50,7 @@ export const passwordResetService = {
     return requestJson<MyResetRequirement>("/api/password-reset-requests/me");
   },
 
-  async changePasswordWithTemporary(currentPassword: string, newPassword: string) {
+  async changePassword(currentPassword: string, newPassword: string) {
     return requestJson<{ ok?: boolean; token?: string }>("/api/auth/change-password", {
       method: "POST",
       headers: {
@@ -64,13 +63,9 @@ export const passwordResetService = {
     });
   },
 
-  async completeMyReset(temporaryPassword?: string) {
+  async completeMyReset() {
     return requestJson<{ ok: boolean }>("/api/password-reset-requests/complete", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ temporaryPassword: temporaryPassword || "" }),
     });
   },
 };

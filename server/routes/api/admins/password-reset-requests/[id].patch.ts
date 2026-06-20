@@ -7,7 +7,6 @@ import { mapPasswordResetRow, updatePasswordResetRequest, type PasswordResetStat
 type Body = {
   status?: unknown;
   adminNote?: unknown;
-  generateTemporaryPassword?: unknown;
 };
 
 const VALID_STATUSES = new Set<PasswordResetStatus>(["pending", "approved", "completed", "rejected"]);
@@ -41,15 +40,10 @@ export default defineHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "adminNote must be a string" });
   }
 
-  if (body.generateTemporaryPassword !== undefined && typeof body.generateTemporaryPassword !== "boolean") {
-    throw createError({ statusCode: 400, statusMessage: "generateTemporaryPassword must be a boolean" });
-  }
-
   const updated = await updatePasswordResetRequest(id, {
     status: body.status as PasswordResetStatus | undefined,
     adminNote: body.adminNote,
     handledBy: session.user.id,
-    generateTemporaryPassword: body.generateTemporaryPassword === true,
   });
 
   if (!updated) {

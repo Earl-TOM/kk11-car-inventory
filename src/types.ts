@@ -35,7 +35,6 @@ export interface PasswordResetRequest {
   reason: string;
   status: PasswordResetRequestStatus;
   adminNote: string;
-  temporaryPassword: string;
   handledBy: string | null;
   createdAt: string;
   updatedAt: string;

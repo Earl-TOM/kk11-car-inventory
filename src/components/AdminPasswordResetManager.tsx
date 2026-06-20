@@ -27,7 +27,6 @@ export default function AdminPasswordResetManager() {
     setWorkingId(item.id);
     await passwordResetService.updateRequest(item.id, {
       status: "approved",
-      generateTemporaryPassword: false,
       adminNote: "Password reset required on next login.",
     });
     setWorkingId(null);
