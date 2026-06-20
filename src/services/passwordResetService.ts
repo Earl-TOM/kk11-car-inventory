@@ -10,6 +10,11 @@ type MyResetRequirement = {
   requestId: number | null;
 };
 
+type ResetStartResult = {
+  approved: boolean;
+  requestCreated: boolean;
+};
+
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, init);
 
@@ -24,6 +29,16 @@ async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Pro
 export const passwordResetService = {
   async submitRequest(email: string, reason: string) {
     return requestJson<PasswordResetRequest>("/api/password-reset-requests", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, reason }),
+    });
+  },
+
+  async startResetFromMenu(email: string, reason: string) {
+    return requestJson<ResetStartResult>("/api/password-reset-requests/start", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

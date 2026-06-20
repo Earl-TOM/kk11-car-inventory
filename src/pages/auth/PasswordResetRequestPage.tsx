@@ -1,10 +1,11 @@
 import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { passwordResetService } from "../../services/passwordResetService";
 import "./auth.css";
 
 export default function PasswordResetRequestPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -13,12 +14,19 @@ export default function PasswordResetRequestPage() {
     event.preventDefault();
     setSubmitting(true);
 
-    await passwordResetService.submitRequest(email, reason);
+    const result = await passwordResetService.startResetFromMenu(email, reason);
 
     setSubmitting(false);
+
+    if (result.approved) {
+      toast.success("Request already approved. Continue with email reset.");
+      navigate("/auth/forgot-password");
+      return;
+    }
+
     setEmail("");
     setReason("");
-    toast.success("Reset request sent to admin");
+    toast.success("Reset request sent to admin for approval");
   };
 
   return (
@@ -30,7 +38,7 @@ export default function PasswordResetRequestPage() {
         </div>
 
         <p style={{ marginBottom: "12px" }}>
-          Password resets are handled by admins only. Submit your request below.
+          Enter your account email. If your reset is already approved, you’ll continue immediately to email reset. If not, a request is sent to admin.
         </p>
 
         <form onSubmit={onSubmit}>
@@ -52,7 +60,7 @@ export default function PasswordResetRequestPage() {
           />
 
           <button type="submit" disabled={submitting}>
-            {submitting ? "Sending..." : "Send Request"}
+            {submitting ? "Checking..." : "Continue"}
           </button>
         </form>
 
