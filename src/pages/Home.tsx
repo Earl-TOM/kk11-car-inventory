@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { carService } from '../services/carService';
-import { Car, SiteSettings } from '../types';
+import { Car, CarStatus, SiteSettings } from '../types';
 import CarCard from '../components/CarCard';
 import CarDetailsModal from '../components/CarDetailsModal';
 import { Loader2, Search, Car as CarIcon } from 'lucide-react';
@@ -14,6 +14,7 @@ const MAX_PRICE_LIMIT = 1_000_000_000;
 const LOW_RANGE_MAX = 250_000;
 const SLIDER_MAX = 1000;
 const SLIDER_MID = 500;
+const STATUS_OPTIONS: CarStatus[] = ['Available', 'Reserved', 'Sold'];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -53,6 +54,7 @@ export default function Home({ settings }: HomeProps) {
   const [search, setSearch] = useState('');
   const [sliderPosition, setSliderPosition] = useState<number>(priceToSlider(MAX_PRICE_LIMIT));
   const [selectedMake, setSelectedMake] = useState<string>('All');
+  const [selectedStatuses, setSelectedStatuses] = useState<CarStatus[]>(['Available']);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
 
   const maxPrice = sliderToPrice(sliderPosition);
@@ -67,12 +69,25 @@ export default function Home({ settings }: HomeProps) {
 
   const makes = ['All', ...new Set(cars.map(car => car.make))];
 
+  const toggleStatus = (status: CarStatus) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status)
+        ? prev.filter((item) => item !== status)
+        : [...prev, status]
+    );
+  };
+
+  const clearStatusFilters = () => {
+    setSelectedStatuses([]);
+  };
+
   const filteredCars = cars.filter(car => {
     const matchesSearch = car.make.toLowerCase().includes(search.toLowerCase()) ||
                          car.model.toLowerCase().includes(search.toLowerCase());
     const matchesPrice = car.price <= maxPrice;
     const matchesMake = selectedMake === 'All' || car.make === selectedMake;
-    return matchesSearch && matchesPrice && matchesMake;
+    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(car.status);
+    return matchesSearch && matchesPrice && matchesMake && matchesStatus;
   });
 
   return (
@@ -140,6 +155,36 @@ export default function Home({ settings }: HomeProps) {
                 />
               </div>
             </div>
+
+            <div className="border-2 border-art-black bg-white p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/40">Market Status</label>
+                <button
+                  type="button"
+                  onClick={clearStatusFilters}
+                  className="border border-art-black px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-art-black transition-all hover:bg-art-black hover:text-white"
+                >
+                  Clear All
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {STATUS_OPTIONS.map((status) => (
+                  <label
+                    key={status}
+                    className="flex cursor-pointer items-center gap-2 border border-art-black px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-art-black"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedStatuses.includes(status)}
+                      onChange={() => toggleStatus(status)}
+                      className="h-4 w-4 accent-art-black"
+                    />
+                    {status}
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-1 flex-col gap-4">
@@ -155,6 +200,7 @@ export default function Home({ settings }: HomeProps) {
                 setSearch('');
                 setSliderPosition(priceToSlider(MAX_PRICE_LIMIT));
                 setSelectedMake('All');
+                setSelectedStatuses(['Available']);
               }}
               className="border-2 border-art-black bg-art-black py-4 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange"
             >
