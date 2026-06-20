@@ -26,6 +26,12 @@ export const accessService = {
     });
   },
 
+  async removeAllowedAccount(id: number) {
+    return requestJson<{ ok: boolean }>(`/api/account-access/${id}`, {
+      method: "DELETE",
+    });
+  },
+
   async getSignupSettings() {
     return requestJson<SignupSettings>("/api/admins/signup-settings");
   },

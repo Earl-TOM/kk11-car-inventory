@@ -45,3 +45,13 @@ export async function listAllowedAccounts() {
     ORDER BY created_at DESC
   `;
 }
+
+export async function removeAllowedAccount(id: number) {
+  const rows = await sql<{ id: number }[]>`
+    DELETE FROM allowed_accounts
+    WHERE id = ${id}
+    RETURNING id
+  `;
+
+  return rows[0] ?? null;
+}

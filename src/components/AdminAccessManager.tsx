@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { accessService } from "../services/accessService";
 import { AllowedAccount } from "../types";
-import { ShieldPlus } from "lucide-react";
+import { ShieldPlus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AdminAccessManager() {
@@ -10,6 +10,7 @@ export default function AdminAccessManager() {
   const [loading, setLoading] = useState(false);
   const [signupsEnabled, setSignupsEnabled] = useState<boolean | null>(null);
   const [savingToggle, setSavingToggle] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
 
   const loadItems = async () => {
     const [accounts, settings] = await Promise.all([
@@ -48,6 +49,17 @@ export default function AdminAccessManager() {
     setSavingToggle(false);
 
     toast.success(result.enabled ? "Signups enabled" : "Signups disabled");
+  };
+
+  const onRemoveApprovedAccount = async (item: AllowedAccount) => {
+    const confirmed = window.confirm(`Remove ${item.email} from approved signups?`);
+    if (!confirmed) return;
+
+    setRemovingId(item.id);
+    await accessService.removeAllowedAccount(item.id);
+    await loadItems();
+    setRemovingId(null);
+    toast.success("Approved account removed");
   };
 
   return (
@@ -108,9 +120,20 @@ export default function AdminAccessManager() {
         {items.map((item) => (
           <div key={item.id} className="flex items-center justify-between border border-art-black/20 px-3 py-2">
             <span className="font-serif text-sm text-art-black">{item.email}</span>
-            <span className="font-mono text-[9px] uppercase tracking-wider text-art-black/40">
-              Approved
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-art-black/40">
+                Approved
+              </span>
+              <button
+                type="button"
+                onClick={() => onRemoveApprovedAccount(item)}
+                disabled={removingId === item.id}
+                className="border border-art-black px-2 py-1 text-art-black transition-all hover:bg-art-orange hover:text-white disabled:opacity-50"
+                aria-label={`Remove ${item.email}`}
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
