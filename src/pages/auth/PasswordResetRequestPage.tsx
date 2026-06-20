@@ -19,8 +19,8 @@ export default function PasswordResetRequestPage() {
     setSubmitting(false);
 
     if (result.approved) {
-      toast.success("Request already approved. Redirecting to sign in.");
-      navigate("/auth/sign-in");
+      toast.success("Request already approved. Continue by signing in.");
+      navigate("/auth/sign-in?reset=approved");
       return;
     }
 

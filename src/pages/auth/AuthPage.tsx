@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { AuthView } from "@neondatabase/auth/react";
 import { settingsService } from "../../services/settingsService";
 import "./auth.css";
@@ -8,9 +8,14 @@ const ALLOWED_AUTH_PATHS = new Set(["sign-in", "sign-up"]);
 
 export default function AuthPage() {
   const { path } = useParams<{ path: string }>();
+  const location = useLocation();
   const requestedPath = path || "sign-in";
   const authPath = ALLOWED_AUTH_PATHS.has(requestedPath) ? requestedPath : "sign-in";
   const [signupsEnabled, setSignupsEnabled] = useState<boolean | null>(null);
+
+  const searchParams = new URLSearchParams(location.search);
+  const isApprovedResetFlow = searchParams.get("reset") === "approved";
+  const redirectTo = authPath === "sign-in" && isApprovedResetFlow ? "/auth/force-reset" : "/";
 
   useEffect(() => {
     settingsService.getPublicSettings().then((settings) => setSignupsEnabled(settings.signupsEnabled));
@@ -74,9 +79,16 @@ export default function AuthPage() {
           <p className="auth-kicker">Account Access</p>
           <h1 className="auth-title">AutoTrade</h1>
         </div>
+
+        {authPath === "sign-in" && isApprovedResetFlow ? (
+          <p style={{ marginBottom: "12px" }}>
+            Your reset request is approved. Sign in now and you’ll be taken to set a new password.
+          </p>
+        ) : null}
+
         <AuthView
           path={authPath}
-          redirectTo="/"
+          redirectTo={redirectTo}
         />
         <p style={{ marginTop: "14px" }}>
           {authPath === "sign-up" ? (
