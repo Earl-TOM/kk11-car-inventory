@@ -43,9 +43,10 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home settings={settings} />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/auth/:path" element={<AuthPage />} />
+            <Route path="/auth/forgot-password" element={<PasswordResetRequestPage />} />
             <Route path="/auth/request-reset" element={<PasswordResetRequestPage />} />
             <Route path="/auth/force-reset" element={<ForcePasswordResetPage />} />
+            <Route path="/auth/:path" element={<AuthPage />} />
           </Routes>
         </div>
       </AuthProvider>

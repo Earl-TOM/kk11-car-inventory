@@ -4,7 +4,7 @@ import { AuthView } from "@neondatabase/auth/react";
 import { settingsService } from "../../services/settingsService";
 import "./auth.css";
 
-const ALLOWED_AUTH_PATHS = new Set(["sign-in", "sign-up", "forgot-password", "reset-password"]);
+const ALLOWED_AUTH_PATHS = new Set(["sign-in", "sign-up"]);
 
 export default function AuthPage() {
   const { path } = useParams<{ path: string }>();
@@ -77,7 +77,6 @@ export default function AuthPage() {
         <AuthView
           path={authPath}
           redirectTo="/"
-          credentials={{ forgotPassword: true }}
         />
         <p style={{ marginTop: "14px" }}>
           {authPath === "sign-up" ? (
@@ -96,7 +95,7 @@ export default function AuthPage() {
         </p>
         {authPath === "sign-in" ? (
           <p style={{ marginTop: "8px" }}>
-            Forgot your password? <Link to="/auth/forgot-password">Reset with email link</Link>
+            Forgot your password? <Link to="/auth/request-reset">Request admin reset</Link>
           </p>
         ) : null}
       </div>
