@@ -27,6 +27,20 @@ export interface SignupSettings {
   enabled: boolean;
 }
 
+export type PasswordResetRequestStatus = "pending" | "approved" | "completed" | "rejected";
+
+export interface PasswordResetRequest {
+  id: number;
+  email: string;
+  reason: string;
+  status: PasswordResetRequestStatus;
+  adminNote: string;
+  temporaryPassword: string;
+  handledBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   siteSubtitle: string;

@@ -57,7 +57,7 @@ export default function AuthPage() {
         <AuthView
           path={authPath}
           redirectTo="/"
-          credentials={{ forgotPassword: true }}
+          credentials={{ forgotPassword: false }}
         />
         <p style={{ marginTop: "14px" }}>
           {authPath === "sign-up" ? (
@@ -74,6 +74,11 @@ export default function AuthPage() {
             </>
           )}
         </p>
+        {authPath === "sign-in" ? (
+          <p style={{ marginTop: "8px" }}>
+            Forgot your password? <Link to="/auth/request-reset">Send a reset request to admin</Link>
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Admin from "./pages/Admin";
 import AuthProvider from "./components/AuthProvider";
 import AuthPage from "./pages/auth/AuthPage";
+import PasswordResetRequestPage from "./pages/auth/PasswordResetRequestPage";
 import { SiteSettings } from "./types";
 import { settingsService } from "./services/settingsService";
 
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/" element={<Home settings={settings} />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/auth/:path" element={<AuthPage />} />
+            <Route path="/auth/request-reset" element={<PasswordResetRequestPage />} />
           </Routes>
         </div>
       </AuthProvider>

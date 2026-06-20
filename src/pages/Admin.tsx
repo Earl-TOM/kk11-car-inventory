@@ -5,6 +5,7 @@ import { Car } from "../types";
 import AdminCarForm from "../components/AdminCarForm";
 import AdminAccessManager from "../components/AdminAccessManager";
 import AdminSiteSettings from "../components/AdminSiteSettings";
+import AdminPasswordResetManager from "../components/AdminPasswordResetManager";
 import { useAuthSession } from "../lib/auth-client";
 import {
   Plus,
@@ -154,6 +155,7 @@ export default function Admin() {
               <div className="space-y-12">
                 <AdminSiteSettings />
                 <AdminAccessManager />
+                <AdminPasswordResetManager />
               </div>
             ) : (
               <div className="space-y-8">
