@@ -67,10 +67,10 @@ export default function Navbar({ settings }: NavbarProps) {
             </div>
           ) : (
             <Link
-              to="/auth/sign-in"
+              to="/auth/sign-up"
               className="border-2 border-white bg-white px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-art-black transition-all hover:bg-art-orange hover:text-white"
             >
-              Log In
+              Sign Up / Log In
             </Link>
           )}
         </div>

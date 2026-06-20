@@ -10,9 +10,8 @@ export default function AuthPage() {
   const [signupsEnabled, setSignupsEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (authPath !== "sign-up") return;
     settingsService.getPublicSettings().then((settings) => setSignupsEnabled(settings.signupsEnabled));
-  }, [authPath]);
+  }, []);
 
   if (authPath === "sign-up" && signupsEnabled === null) {
     return (
@@ -60,6 +59,21 @@ export default function AuthPage() {
           redirectTo="/"
           credentials={{ forgotPassword: true }}
         />
+        <p style={{ marginTop: "14px" }}>
+          {authPath === "sign-up" ? (
+            <>
+              Already have an account? <Link to="/auth/sign-in">Sign in</Link>
+            </>
+          ) : signupsEnabled === false ? (
+            <>
+              Need access? Ask an admin to approve your email and enable signups.
+            </>
+          ) : (
+            <>
+              Approved email and new here? <Link to="/auth/sign-up">Create your account</Link>
+            </>
+          )}
+        </p>
       </div>
     </div>
   );
