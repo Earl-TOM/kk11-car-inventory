@@ -6,6 +6,11 @@ type UpdateResetRequestPayload = {
   generateTemporaryPassword?: boolean;
 };
 
+type MyResetRequirement = {
+  required: boolean;
+  requestId: number | null;
+};
+
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, init);
 
@@ -39,6 +44,33 @@ export const passwordResetService = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+    });
+  },
+
+  async getMyResetRequirement() {
+    return requestJson<MyResetRequirement>("/api/password-reset-requests/me");
+  },
+
+  async changePasswordWithTemporary(temporaryPassword: string, newPassword: string) {
+    return requestJson<{ ok?: boolean; token?: string }>("/api/auth/change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        currentPassword: temporaryPassword,
+        newPassword,
+      }),
+    });
+  },
+
+  async completeMyReset(temporaryPassword: string) {
+    return requestJson<{ ok: boolean }>("/api/password-reset-requests/complete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ temporaryPassword }),
     });
   },
 };

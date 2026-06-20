@@ -120,3 +120,39 @@ export async function updatePasswordResetRequest(id: number, input: UpdatePasswo
 
   return rows[0] ?? null;
 }
+
+export async function getApprovedPasswordResetRequestByEmail(email: string) {
+  const normalized = normalizeEmail(email);
+
+  const rows = await sql<PasswordResetRequestRow[]>`
+    SELECT
+      id, email, reason, status, admin_note, temporary_password, handled_by, created_at, updated_at
+    FROM password_reset_requests
+    WHERE LOWER(email) = ${normalized}
+      AND status = 'approved'
+    ORDER BY updated_at DESC
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+export async function completeApprovedPasswordResetRequest(id: number, email: string, temporaryPassword: string) {
+  const normalized = normalizeEmail(email);
+  const temp = temporaryPassword.trim();
+
+  const rows = await sql<PasswordResetRequestRow[]>`
+    UPDATE password_reset_requests
+    SET
+      status = 'completed',
+      updated_at = NOW()
+    WHERE id = ${id}
+      AND LOWER(email) = ${normalized}
+      AND status = 'approved'
+      AND temporary_password = ${temp}
+    RETURNING
+      id, email, reason, status, admin_note, temporary_password, handled_by, created_at, updated_at
+  `;
+
+  return rows[0] ?? null;
+}

@@ -6,6 +6,8 @@ import Admin from "./pages/Admin";
 import AuthProvider from "./components/AuthProvider";
 import AuthPage from "./pages/auth/AuthPage";
 import PasswordResetRequestPage from "./pages/auth/PasswordResetRequestPage";
+import ForcePasswordResetPage from "./pages/auth/ForcePasswordResetPage";
+import PasswordResetGuard from "./components/PasswordResetGuard";
 import { SiteSettings } from "./types";
 import { settingsService } from "./services/settingsService";
 
@@ -35,6 +37,7 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
+        <PasswordResetGuard />
         <div className="min-h-screen bg-[#fcfaf7] font-sans text-slate-900">
           <Navbar settings={settings} />
           <Routes>
@@ -42,6 +45,7 @@ export default function App() {
             <Route path="/admin" element={<Admin />} />
             <Route path="/auth/:path" element={<AuthPage />} />
             <Route path="/auth/request-reset" element={<PasswordResetRequestPage />} />
+            <Route path="/auth/force-reset" element={<ForcePasswordResetPage />} />
           </Routes>
         </div>
       </AuthProvider>
