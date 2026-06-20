@@ -1,10 +1,10 @@
 import { defineHandler } from "nitro";
 import { createError, getRequestHeader, readBody } from "nitro/h3";
-import { getSessionFromCookie } from "../../utils/session";
+import { getSessionFromCookie } from "../../../utils/session";
 import {
   completeApprovedPasswordResetRequest,
   getApprovedPasswordResetRequestByEmail,
-} from "../../utils/password-reset-requests";
+} from "../../../utils/password-reset-requests";
 
 type Body = {
   temporaryPassword?: unknown;
