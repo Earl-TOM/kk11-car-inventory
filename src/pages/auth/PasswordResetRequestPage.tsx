@@ -19,8 +19,8 @@ export default function PasswordResetRequestPage() {
     setSubmitting(false);
 
     if (result.approved) {
-      toast.success("Request already approved. Continue with email reset.");
-      navigate("/auth/forgot-password");
+      toast.success("Request already approved. Redirecting to sign in.");
+      navigate("/auth/sign-in");
       return;
     }
 
@@ -38,7 +38,7 @@ export default function PasswordResetRequestPage() {
         </div>
 
         <p style={{ marginBottom: "12px" }}>
-          Enter your account email. If your reset is already approved, you’ll continue immediately to email reset. If not, a request is sent to admin.
+          Enter your account email. If your request is approved, you’ll be redirected to sign in. If not, a reset request is sent to admin.
         </p>
 
         <form onSubmit={onSubmit}>
