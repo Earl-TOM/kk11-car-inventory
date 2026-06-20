@@ -4,8 +4,7 @@ import { AuthView } from "@neondatabase/auth/react";
 import { settingsService } from "../../services/settingsService";
 import "./auth.css";
 
-const ALLOWED_AUTH_PATHS = new Set(["sign-in", "sign-up"]);
-const ADMIN_RESET_PATHS = new Set(["forgot-password", "reset-password"]);
+const ALLOWED_AUTH_PATHS = new Set(["sign-in", "sign-up", "forgot-password", "reset-password"]);
 
 export default function AuthPage() {
   const { path } = useParams<{ path: string }>();
@@ -17,27 +16,7 @@ export default function AuthPage() {
     settingsService.getPublicSettings().then((settings) => setSignupsEnabled(settings.signupsEnabled));
   }, []);
 
-  if (ADMIN_RESET_PATHS.has(requestedPath)) {
-    return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <div className="auth-brand">
-            <p className="auth-kicker">Password Assistance</p>
-            <h1 className="auth-title">Admin Reset</h1>
-          </div>
-          <p>Password resets are handled by admins in this system.</p>
-          <p>
-            Please submit your request here: <Link to="/auth/request-reset">Request reset</Link>
-          </p>
-          <p>
-            Back to <Link to="/auth/sign-in">sign in</Link>
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (requestedPath !== authPath && !ADMIN_RESET_PATHS.has(requestedPath)) {
+  if (requestedPath !== authPath) {
     return (
       <div className="auth-page">
         <div className="auth-card">
@@ -98,7 +77,7 @@ export default function AuthPage() {
         <AuthView
           path={authPath}
           redirectTo="/"
-          credentials={{ forgotPassword: false }}
+          credentials={{ forgotPassword: true }}
         />
         <p style={{ marginTop: "14px" }}>
           {authPath === "sign-up" ? (
@@ -117,7 +96,7 @@ export default function AuthPage() {
         </p>
         {authPath === "sign-in" ? (
           <p style={{ marginTop: "8px" }}>
-            Forgot your password? <Link to="/auth/request-reset">Send a reset request to admin</Link>
+            Forgot your password? <Link to="/auth/forgot-password">Reset with email link</Link>
           </p>
         ) : null}
       </div>

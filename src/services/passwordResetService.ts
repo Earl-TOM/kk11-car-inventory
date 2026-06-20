@@ -51,26 +51,26 @@ export const passwordResetService = {
     return requestJson<MyResetRequirement>("/api/password-reset-requests/me");
   },
 
-  async changePasswordWithTemporary(temporaryPassword: string, newPassword: string) {
+  async changePasswordWithTemporary(currentPassword: string, newPassword: string) {
     return requestJson<{ ok?: boolean; token?: string }>("/api/auth/change-password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        currentPassword: temporaryPassword,
+        currentPassword,
         newPassword,
       }),
     });
   },
 
-  async completeMyReset(temporaryPassword: string) {
+  async completeMyReset(temporaryPassword?: string) {
     return requestJson<{ ok: boolean }>("/api/password-reset-requests/complete", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ temporaryPassword }),
+      body: JSON.stringify({ temporaryPassword: temporaryPassword || "" }),
     });
   },
 };

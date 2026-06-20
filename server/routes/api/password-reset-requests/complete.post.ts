@@ -21,14 +21,16 @@ export default defineHandler(async (event) => {
   const temporaryPassword =
     typeof body.temporaryPassword === "string" ? body.temporaryPassword.trim() : "";
 
-  if (!temporaryPassword) {
-    throw createError({ statusCode: 400, statusMessage: "temporaryPassword is required" });
-  }
-
   const request = await getApprovedPasswordResetRequestByEmail(session.user.email);
 
   if (!request) {
     return { ok: true };
+  }
+
+  const requiresTemporaryPassword = (request.temporary_password || "").trim().length > 0;
+
+  if (requiresTemporaryPassword && temporaryPassword.length === 0) {
+    throw createError({ statusCode: 400, statusMessage: "temporaryPassword is required" });
   }
 
   const completed = await completeApprovedPasswordResetRequest(
@@ -38,7 +40,7 @@ export default defineHandler(async (event) => {
   );
 
   if (!completed) {
-    throw createError({ statusCode: 400, statusMessage: "Temporary password is invalid" });
+    throw createError({ statusCode: 400, statusMessage: "Password reset completion failed" });
   }
 
   return { ok: true };

@@ -8,7 +8,7 @@ import "./auth.css";
 export default function ForcePasswordResetPage() {
   const session = useAuthSession();
   const navigate = useNavigate();
-  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [checking, setChecking] = useState(true);
@@ -44,8 +44,8 @@ export default function ForcePasswordResetPage() {
 
     setSubmitting(true);
 
-    await passwordResetService.changePasswordWithTemporary(temporaryPassword, newPassword);
-    await passwordResetService.completeMyReset(temporaryPassword);
+    await passwordResetService.changePasswordWithTemporary(currentPassword, newPassword);
+    await passwordResetService.completeMyReset(currentPassword);
 
     setSubmitting(false);
     toast.success("Password updated successfully");
@@ -92,17 +92,17 @@ export default function ForcePasswordResetPage() {
         </div>
 
         <p style={{ marginBottom: "12px" }}>
-          You signed in using a temporary password. Please set a new password now.
+          Your account is flagged for a required password update. Please set a new password now.
         </p>
 
         <form onSubmit={onSubmit}>
-          <label>Temporary Password</label>
+          <label>Current Password</label>
           <input
             required
             type="password"
-            value={temporaryPassword}
-            onChange={(e) => setTemporaryPassword(e.target.value)}
-            placeholder="Enter temporary password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Enter current password"
           />
 
           <label>New Password</label>
