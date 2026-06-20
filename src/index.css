@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400;1,700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-art-beige: #F9F7F2;
+  --color-art-black: #1A1A1A;
+  --color-art-orange: #FF6321;
+}
+
+@layer base {
+  body {
+    @apply bg-art-beige text-art-black font-sans;
+  }
+}
+
+.brutalist-border {
+  @apply border-2 border-art-black;
+}
+
+.brutalist-shadow {
+  @apply shadow-[4px_4px_0px_0px_rgba(26,26,26,1)];
+}

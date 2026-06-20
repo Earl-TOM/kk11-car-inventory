@@ -1,0 +1,103 @@
+.auth-page {
+  min-height: calc(100vh - 82px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 99, 33, 0.08), transparent 40%),
+    #f9f7f2;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  border: 2px solid #1a1a1a;
+  background: #ffffff;
+  box-shadow: 6px 6px 0 #1a1a1a;
+  padding: 28px;
+}
+
+.auth-brand {
+  margin-bottom: 18px;
+  border-bottom: 2px solid #1a1a1a;
+  padding-bottom: 12px;
+}
+
+.auth-kicker {
+  margin: 0 0 8px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.5);
+}
+
+.auth-title {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-size: 40px;
+  line-height: 1;
+  color: #1a1a1a;
+}
+
+.auth-card :where(form) {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.auth-card :where(label) {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.55);
+}
+
+.auth-card :where(input) {
+  width: 100%;
+  border: 2px solid #1a1a1a;
+  border-radius: 0;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.auth-card :where(input:focus) {
+  border-color: #ff6321;
+}
+
+.auth-card :where(button[type="submit"]) {
+  border: 2px solid #1a1a1a;
+  background: #1a1a1a;
+  color: #fff;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 12px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.auth-card :where(button[type="submit"]:hover) {
+  background: #ff6321;
+}
+
+.auth-card :where(a) {
+  color: #1a1a1a;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-card :where(p) {
+  color: rgba(26, 26, 26, 0.8);
+}
