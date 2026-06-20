@@ -3,7 +3,7 @@ import { createError, readBody } from "nitro/h3";
 import {
   createPasswordResetRequest,
   getApprovedPasswordResetRequestByEmail,
-} from "../../utils/password-reset-requests";
+} from "../../../utils/password-reset-requests";
 
 type Body = {
   email?: unknown;
