@@ -6,6 +6,7 @@ import ImageCarousel from './ImageCarousel';
 import { formatZMW } from '../lib/currency';
 
 interface CarCardProps {
+  key?: string | number;
   car: Car;
   onViewDetails?: (car: Car) => void;
   whatsappNumber?: string;

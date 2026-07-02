@@ -21,7 +21,8 @@ export default function BrandAssetUploader({
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
+    const selectedFiles = event.target.files;
+    const files: File[] = selectedFiles ? Array.from(selectedFiles) : [];
     event.target.value = "";
 
     if (files.length === 0) {

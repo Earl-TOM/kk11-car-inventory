@@ -40,9 +40,12 @@ export default defineHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "adminNote must be a string" });
   }
 
+  const status = typeof body.status === "string" ? (body.status as PasswordResetStatus) : undefined;
+  const adminNote = typeof body.adminNote === "string" ? body.adminNote : undefined;
+
   const updated = await updatePasswordResetRequest(id, {
-    status: body.status as PasswordResetStatus | undefined,
-    adminNote: body.adminNote,
+    status,
+    adminNote,
     handledBy: session.user.id,
   });
 

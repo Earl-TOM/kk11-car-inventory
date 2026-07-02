@@ -13,7 +13,8 @@ export default function PhotoUploader({ photos, onChange, disabled = false }: Ph
   const [uploading, setUploading] = useState(false);
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
+    const selectedFiles = event.target.files;
+    const files: File[] = selectedFiles ? Array.from(selectedFiles) : [];
     event.target.value = "";
 
     if (files.length === 0) {
