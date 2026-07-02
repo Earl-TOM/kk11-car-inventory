@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { KeyRound, CheckCircle2, Ban, Clock3 } from "lucide-react";
+import { KeyRound, CheckCircle2, Ban, Clock3, Plus } from "lucide-react";
 import { PasswordResetRequest } from "../types";
 import { passwordResetService } from "../services/passwordResetService";
 
@@ -12,6 +12,9 @@ export default function AdminPasswordResetManager() {
   const [items, setItems] = useState<PasswordResetRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [email, setEmail] = useState("");
+  const [reason, setReason] = useState("");
 
   const loadItems = async () => {
     const requests = await passwordResetService.listRequests();
@@ -22,6 +25,28 @@ export default function AdminPasswordResetManager() {
   useEffect(() => {
     loadItems();
   }, []);
+
+  const createAndApproveReset = async (event: FormEvent) => {
+    event.preventDefault();
+
+    if (!email.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+
+    setCreating(true);
+    await passwordResetService.createAdminReset({
+      email,
+      reason,
+      adminNote: "Password reset required by admin.",
+    });
+    setCreating(false);
+
+    setEmail("");
+    setReason("");
+    await loadItems();
+    toast.success("Password reset created and approved");
+  };
 
   const approveResetRequirement = async (item: PasswordResetRequest) => {
     setWorkingId(item.id);
@@ -66,8 +91,34 @@ export default function AdminPasswordResetManager() {
       </div>
 
       <p className="mb-4 border border-art-black/20 bg-art-beige px-3 py-2 font-serif text-sm text-art-black/80">
-        Users submit reset requests here; admins can approve a mandatory reset and users will be required to change password after sign-in.
+        Create a reset for any user below, or manage incoming requests. Approved users will be forced to set a new password on next sign-in.
       </p>
+
+      <form onSubmit={createAndApproveReset} className="mb-6 grid gap-3 border-2 border-art-black/20 p-4 md:grid-cols-3">
+        <input
+          required
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="user@email.com"
+          className="border-2 border-art-black bg-white px-3 py-2 font-serif text-sm outline-none focus:border-art-orange"
+        />
+        <input
+          type="text"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Reason (optional)"
+          className="border-2 border-art-black bg-white px-3 py-2 font-serif text-sm outline-none focus:border-art-orange"
+        />
+        <button
+          type="submit"
+          disabled={creating}
+          className="inline-flex items-center justify-center gap-1 border-2 border-art-black bg-art-black px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
+        >
+          <Plus size={12} />
+          {creating ? "Creating..." : "Create & Approve"}
+        </button>
+      </form>
 
       {loading ? (
         <p className="font-serif text-sm text-art-black/70">Loading reset requests...</p>

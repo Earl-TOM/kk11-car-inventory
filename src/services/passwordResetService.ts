@@ -5,6 +5,12 @@ type UpdateResetRequestPayload = {
   adminNote?: string;
 };
 
+type CreateAdminResetPayload = {
+  email: string;
+  reason?: string;
+  adminNote?: string;
+};
+
 type MyResetRequirement = {
   required: boolean;
   requestId: number | null;
@@ -54,6 +60,16 @@ export const passwordResetService = {
   async updateRequest(id: number, payload: UpdateResetRequestPayload) {
     return requestJson<PasswordResetRequest>(`/api/admins/password-reset-requests/${id}`, {
       method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async createAdminReset(payload: CreateAdminResetPayload) {
+    return requestJson<PasswordResetRequest>("/api/admins/password-reset-requests", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
