@@ -1,9 +1,9 @@
-import { useState, useEffect, FormEvent } from "react";
-import { Car, CarStatus } from "../types";
-import { carService } from "../services/carService";
-import { X } from "lucide-react";
-import toast from "react-hot-toast";
-import PhotoUploader from "./PhotoUploader";
+import { useState, useEffect, FormEvent } from 'react';
+import { Car, CarStatus } from '../types';
+import { carService } from '../services/carService';
+import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import PhotoUploader, { ExistingPhoto } from './PhotoUploader';
 
 interface AdminCarFormProps {
   car?: Car | null;
@@ -11,53 +11,125 @@ interface AdminCarFormProps {
   onSuccess: () => void;
 }
 
+interface CarFields {
+  make: string;
+  model: string;
+  year: number | undefined;
+  price: number | undefined;
+  status: CarStatus;
+  engine: string;
+  mileage: number | undefined;
+  originalColour: string;
+  description: string;
+}
+
 function upper(value: string | undefined) {
-  return (value || "").toUpperCase();
+  return (value || '').toUpperCase();
+}
+
+/**
+ * Extract the PocketBase filename from a full file URL.
+ * PB URLs look like: https://host/api/files/{collectionId}/{recordId}/{filename}
+ */
+function extractFilename(url: string): string {
+  return url.split('/').pop() || url;
 }
 
 export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Partial<Car>>({
-    make: "",
-    model: "",
+
+  const [fields, setFields] = useState<CarFields>({
+    make: '',
+    model: '',
     year: new Date().getFullYear(),
     price: 0,
-    status: "Available",
-    engine: "",
+    status: 'Available',
+    engine: '',
     mileage: undefined,
-    originalColour: "",
-    description: "",
-    photos: [],
+    originalColour: '',
+    description: '',
   });
 
+  // Photos already stored in PocketBase (shown as existing)
+  const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>([]);
+  // Filenames of existing photos to remove on save
+  const [removedFilenames, setRemovedFilenames] = useState<string[]>([]);
+  // New File objects the user has selected (pending upload)
+  const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
+
+  // Populate form from existing car
   useEffect(() => {
     if (car) {
-      setFormData(car);
+      setFields({
+        make: car.make ?? '',
+        model: car.model ?? '',
+        year: car.year,
+        price: car.price,
+        status: car.status,
+        engine: car.engine ?? '',
+        mileage: car.mileage,
+        originalColour: car.originalColour ?? '',
+        description: car.description ?? '',
+      });
+      setExistingPhotos(
+        (car.photos || []).map((url) => ({
+          url,
+          filename: extractFilename(url),
+        }))
+      );
+      setRemovedFilenames([]);
+      setNewPhotoFiles([]);
     }
   }, [car]);
 
+  // -------------------------------------------------------------------------
+  // Photo handlers
+  // -------------------------------------------------------------------------
+  const handleRemoveExisting = (filename: string) => {
+    setExistingPhotos((prev) => prev.filter((p) => p.filename !== filename));
+    setRemovedFilenames((prev) => [...prev, filename]);
+  };
+
+  const handleAddFiles = (files: File[]) => {
+    setNewPhotoFiles((prev) => [...prev, ...files]);
+  };
+
+  const handleRemoveNew = (index: number) => {
+    setNewPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // -------------------------------------------------------------------------
+  // Submit
+  // -------------------------------------------------------------------------
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     const payload: Partial<Car> = {
-      ...formData,
-      make: upper(formData.make),
-      model: upper(formData.model),
-      engine: upper(formData.engine),
-      originalColour: upper(formData.originalColour),
+      make: upper(fields.make),
+      model: upper(fields.model),
+      engine: upper(fields.engine),
+      originalColour: upper(fields.originalColour),
+      year: fields.year,
+      price: fields.price,
+      status: fields.status,
+      mileage: fields.mileage,
+      description: fields.description,
     };
 
     try {
       if (car?.id) {
-        await carService.updateCar(car.id, payload);
-        toast.success("Listing updated");
+        await carService.updateCar(car.id, payload, newPhotoFiles, removedFilenames);
+        toast.success('Listing updated');
       } else {
-        await carService.createCar(payload);
-        toast.success("Listing created");
+        await carService.createCar(payload, newPhotoFiles);
+        toast.success('Listing created');
       }
       onSuccess();
       onClose();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Save failed';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -67,7 +139,7 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-art-black/80 p-4 backdrop-blur-sm">
       <div className="w-full max-w-2xl overflow-hidden border-4 border-art-black bg-art-beige shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between border-b-2 border-art-black bg-art-black p-6 text-white">
-          <h2 className="font-serif text-2xl font-bold italic">{car ? "Edit Listing" : "New Archive Entry"}</h2>
+          <h2 className="font-serif text-2xl font-bold italic">{car ? 'Edit Listing' : 'New Archive Entry'}</h2>
           <button onClick={onClose} className="border-2 border-white p-2 hover:bg-white hover:text-art-black">
             <X size={20} />
           </button>
@@ -80,8 +152,8 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
               <input
                 required
                 type="text"
-                value={formData.make || ""}
-                onChange={(e) => setFormData({ ...formData, make: upper(e.target.value) })}
+                value={fields.make}
+                onChange={(e) => setFields((f) => ({ ...f, make: upper(e.target.value) }))}
                 className="w-full border-b-2 border-art-black bg-transparent py-2 font-serif text-lg uppercase outline-none focus:border-art-orange"
                 placeholder="TOYOTA"
               />
@@ -91,8 +163,8 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
               <input
                 required
                 type="text"
-                value={formData.model || ""}
-                onChange={(e) => setFormData({ ...formData, model: upper(e.target.value) })}
+                value={fields.model}
+                onChange={(e) => setFields((f) => ({ ...f, model: upper(e.target.value) }))}
                 className="w-full border-b-2 border-art-black bg-transparent py-2 font-serif text-lg uppercase outline-none focus:border-art-orange"
                 placeholder="MARK X"
               />
@@ -103,12 +175,12 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
                 required
                 type="number"
                 min={1886}
-                value={formData.year ?? ""}
+                value={fields.year ?? ''}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    year: e.target.value === "" ? undefined : parseInt(e.target.value, 10),
-                  })
+                  setFields((f) => ({
+                    ...f,
+                    year: e.target.value === '' ? undefined : parseInt(e.target.value, 10),
+                  }))
                 }
                 className="w-full border-b-2 border-art-black bg-transparent py-2 font-serif text-lg outline-none focus:border-art-orange"
               />
@@ -120,12 +192,12 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
                 type="number"
                 min={0}
                 step="0.01"
-                value={formData.price ?? ""}
+                value={fields.price ?? ''}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    price: e.target.value === "" ? undefined : parseFloat(e.target.value),
-                  })
+                  setFields((f) => ({
+                    ...f,
+                    price: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                  }))
                 }
                 className="w-full border-b-2 border-art-black bg-transparent py-2 font-serif text-lg outline-none focus:border-art-orange"
               />
@@ -133,8 +205,8 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
             <div className="space-y-2">
               <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/40">Market Status</label>
               <select
-                value={formData.status || "Available"}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as CarStatus })}
+                value={fields.status}
+                onChange={(e) => setFields((f) => ({ ...f, status: e.target.value as CarStatus }))}
                 className="w-full appearance-none border-b-2 border-art-black bg-transparent py-2 font-serif text-lg uppercase outline-none focus:border-art-orange"
               >
                 <option value="Available">AVAILABLE</option>
@@ -146,8 +218,8 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
               <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/40">Engine Displacement</label>
               <input
                 type="text"
-                value={formData.engine || ""}
-                onChange={(e) => setFormData({ ...formData, engine: upper(e.target.value) })}
+                value={fields.engine}
+                onChange={(e) => setFields((f) => ({ ...f, engine: upper(e.target.value) }))}
                 className="w-full border-b-2 border-art-black bg-transparent py-2 font-serif text-lg uppercase outline-none focus:border-art-orange"
                 placeholder="2.5L V6"
               />
@@ -157,12 +229,12 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
               <input
                 type="number"
                 min={0}
-                value={formData.mileage ?? ""}
+                value={fields.mileage ?? ''}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    mileage: e.target.value === "" ? undefined : parseInt(e.target.value, 10),
-                  })
+                  setFields((f) => ({
+                    ...f,
+                    mileage: e.target.value === '' ? undefined : parseInt(e.target.value, 10),
+                  }))
                 }
                 className="w-full border-b-2 border-art-black bg-transparent py-2 font-serif text-lg outline-none focus:border-art-orange"
                 placeholder="0"
@@ -172,8 +244,8 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
               <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/40">Original Colour</label>
               <input
                 type="text"
-                value={formData.originalColour || ""}
-                onChange={(e) => setFormData({ ...formData, originalColour: upper(e.target.value) })}
+                value={fields.originalColour}
+                onChange={(e) => setFields((f) => ({ ...f, originalColour: upper(e.target.value) }))}
                 className="w-full border-b-2 border-art-black bg-transparent py-2 font-serif text-lg uppercase outline-none focus:border-art-orange"
                 placeholder="MAROON"
               />
@@ -183,16 +255,19 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
           <div className="mt-12 space-y-2">
             <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/40">Full Description</label>
             <textarea
-              value={formData.description || ""}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={fields.description}
+              onChange={(e) => setFields((f) => ({ ...f, description: e.target.value }))}
               className="min-h-[120px] w-full border-2 border-art-black bg-white p-4 font-serif text-lg outline-none focus:border-art-orange"
               placeholder="Narrative summary of the vehicle history and specs..."
             />
           </div>
 
           <PhotoUploader
-            photos={formData.photos || []}
-            onChange={(photos) => setFormData((prev) => ({ ...prev, photos }))}
+            existingPhotos={existingPhotos}
+            newFiles={newPhotoFiles}
+            onRemoveExisting={handleRemoveExisting}
+            onAddFiles={handleAddFiles}
+            onRemoveNew={handleRemoveNew}
             disabled={loading}
           />
 
@@ -209,7 +284,7 @@ export default function AdminCarForm({ car, onClose, onSuccess }: AdminCarFormPr
               disabled={loading}
               className="flex-[2] border-2 border-art-black bg-art-black py-4 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
             >
-              {loading ? "ARCHIVING..." : car ? "SYNCHRONIZE DATA" : "PUBLISH ENTRY"}
+              {loading ? 'ARCHIVING...' : car ? 'SYNCHRONIZE DATA' : 'PUBLISH ENTRY'}
             </button>
           </div>
         </form>

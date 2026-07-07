@@ -3,11 +3,10 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import dyadComponentTagger from '@dyad-sh/react-vite-component-tagger';
-import { nitro } from 'nitro/vite';
 
 export default defineConfig(() => {
   return {
-    plugins: [dyadComponentTagger(), react(), tailwindcss(), nitro()],
+    plugins: [dyadComponentTagger(), react(), tailwindcss()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

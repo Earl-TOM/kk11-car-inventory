@@ -1,16 +1,17 @@
-import { FormEvent, useEffect, useState } from "react";
-import { accessService } from "../services/accessService";
-import { AllowedAccount } from "../types";
-import { ShieldPlus, Trash2 } from "lucide-react";
-import toast from "react-hot-toast";
+import { FormEvent, useEffect, useState } from 'react';
+import { accessService } from '../services/accessService';
+import { AllowedAccount } from '../types';
+import { ShieldPlus, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function AdminAccessManager() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [items, setItems] = useState<AllowedAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [signupsEnabled, setSignupsEnabled] = useState<boolean | null>(null);
   const [savingToggle, setSavingToggle] = useState(false);
-  const [removingId, setRemovingId] = useState<number | null>(null);
+  // id is now string (PocketBase record ID)
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const loadItems = async () => {
     const [accounts, settings] = await Promise.all([
@@ -33,10 +34,10 @@ export default function AdminAccessManager() {
 
     setLoading(true);
     await accessService.addAllowedAccount(normalized);
-    setEmail("");
+    setEmail('');
     await loadItems();
     setLoading(false);
-    toast.success("Account access approved");
+    toast.success('Account access approved');
   };
 
   const onToggleSignups = async () => {
@@ -48,7 +49,7 @@ export default function AdminAccessManager() {
     setSignupsEnabled(result.enabled);
     setSavingToggle(false);
 
-    toast.success(result.enabled ? "Signups enabled" : "Signups disabled");
+    toast.success(result.enabled ? 'Signups enabled' : 'Signups disabled');
   };
 
   const onRemoveApprovedAccount = async (item: AllowedAccount) => {
@@ -59,7 +60,7 @@ export default function AdminAccessManager() {
     await accessService.removeAllowedAccount(item.id);
     await loadItems();
     setRemovingId(null);
-    toast.success("Approved account removed");
+    toast.success('Approved account removed');
   };
 
   return (
@@ -81,7 +82,7 @@ export default function AdminAccessManager() {
             Public Signup
           </p>
           <p className="mt-1 font-serif text-sm text-art-black">
-            {signupsEnabled ? "Enabled" : "Disabled"}
+            {signupsEnabled ? 'Enabled' : 'Disabled'}
           </p>
         </div>
         <button
@@ -91,10 +92,10 @@ export default function AdminAccessManager() {
           className="border-2 border-art-black bg-art-black px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
         >
           {savingToggle
-            ? "Saving..."
+            ? 'Saving...'
             : signupsEnabled
-              ? "Disable Signups"
-              : "Enable Signups"}
+              ? 'Disable Signups'
+              : 'Enable Signups'}
         </button>
       </div>
 
@@ -112,7 +113,7 @@ export default function AdminAccessManager() {
           disabled={loading}
           className="border-2 border-art-black bg-art-black px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
         >
-          {loading ? "Saving..." : "Approve Email"}
+          {loading ? 'Saving...' : 'Approve Email'}
         </button>
       </form>
 

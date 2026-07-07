@@ -1,10 +1,8 @@
-import { Link } from "react-router-dom";
-import { Car } from "lucide-react";
-import { useEffect, useState } from "react";
-import { carService } from "../services/carService";
-import { useAuthSession } from "../lib/auth-client";
-import UserMenu from "./UserMenu";
-import { SiteSettings } from "../types";
+import { Link } from 'react-router-dom';
+import { Car } from 'lucide-react';
+import { useAuthSession } from '../lib/auth-client';
+import UserMenu from './UserMenu';
+import { SiteSettings } from '../types';
 
 interface NavbarProps {
   settings: SiteSettings | null;
@@ -13,16 +11,8 @@ interface NavbarProps {
 export default function Navbar({ settings }: NavbarProps) {
   const session = useAuthSession();
   const user = session.data?.user ?? null;
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-
-    carService.checkIfAdmin().then(setIsAdmin);
-  }, [user]);
+  // Any logged-in user is treated as admin (PocketBase API rules enforce security)
+  const isAdmin = Boolean(user);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b-2 border-art-black bg-art-black py-4">
@@ -37,10 +27,10 @@ export default function Navbar({ settings }: NavbarProps) {
           </div>
           <div className="flex flex-col">
             <span className="font-serif text-2xl font-bold tracking-tighter text-white">
-              {settings?.siteName || "AutoTrade."}
+              {settings?.siteName || 'AutoTrade.'}
             </span>
             <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-white/40">
-              {settings?.siteSubtitle || "Inventory Management"}
+              {settings?.siteSubtitle || 'Inventory Management'}
             </span>
           </div>
         </Link>

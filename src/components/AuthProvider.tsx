@@ -1,26 +1,20 @@
-import type { ReactNode, ComponentProps } from "react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
-import { NeonAuthUIProvider } from "@neondatabase/auth/react";
-import { authClient } from "../lib/auth-client";
+import { useEffect, type ReactNode } from 'react';
+import { pb } from '../lib/pocketbase';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const navigate = useNavigate();
+  useEffect(() => {
+    // Refresh the auth token on mount to keep the session alive.
+    // If the token is invalid / expired, clear the store.
+    if (pb.authStore.isValid) {
+      pb.collection('users')
+        .authRefresh()
+        .catch(() => pb.authStore.clear());
+    }
+  }, []);
 
-  return (
-    <NeonAuthUIProvider
-      authClient={authClient}
-      defaultTheme="light"
-      navigate={(href) => navigate(href)}
-      replace={(href) => navigate(href, { replace: true })}
-      Link={({ href, ...props }: { href: string } & ComponentProps<"a">) => (
-        <RouterLink to={href} {...props} />
-      )}
-    >
-      {children}
-    </NeonAuthUIProvider>
-  );
+  return <>{children}</>;
 }

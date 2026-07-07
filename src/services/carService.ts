@@ -1,160 +1,150 @@
-import { Car, OperationType, FirestoreErrorInfo } from "../types";
+import type { RecordModel } from 'pocketbase';
+import { pb } from '../lib/pocketbase';
+import { Car, CarStatus } from '../types';
 
-const COLLECTION_NAME = "cars";
-
-function handleServiceError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: null,
-      email: null,
-      emailVerified: null,
-      isAnonymous: null,
-    },
-    operationType,
-    path,
+// ---------------------------------------------------------------------------
+// Mapper: raw PocketBase record → Car
+// ---------------------------------------------------------------------------
+function mapCar(record: RecordModel): Car {
+  return {
+    id: record.id,
+    collectionId: record.collectionId,
+    collectionName: record.collectionName,
+    make: record.make ?? '',
+    model: record.model ?? '',
+    year: record.year ?? 0,
+    engine: record.engine ?? '',
+    mileage: record.mileage ?? 0,
+    originalColour: record.original_colour ?? '',
+    status: (record.status as CarStatus) ?? 'Available',
+    description: record.description ?? '',
+    price: record.price ?? 0,
+    // Map PB filenames → full URLs
+    photos: (record.photos as string[] ?? []).map((filename) =>
+      pb.files.getUrl(record, filename)
+    ),
+    created: record.created,
+    updated: record.updated,
+    createdBy: record.created_by ?? '',
   };
-  console.error("Service Error: ", JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
 }
 
-async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init);
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request failed with status ${response.status}`);
-  }
-
-  return response.json() as Promise<T>;
-}
-
-function sanitizeCarData(carData: Partial<Car>) {
-  const payload: Record<string, unknown> = {};
-
-  if (typeof carData.make === "string") payload.make = carData.make.trim();
-  if (typeof carData.model === "string") payload.model = carData.model.trim();
-
-  if (typeof carData.year === "number" && Number.isFinite(carData.year)) {
-    payload.year = Math.trunc(carData.year);
-  }
-
-  if (typeof carData.price === "number" && Number.isFinite(carData.price)) {
-    payload.price = carData.price;
-  }
-
-  if (typeof carData.status === "string") {
-    payload.status = carData.status;
-  }
-
-  if (typeof carData.engine === "string") payload.engine = carData.engine.trim();
-  if (typeof carData.originalColour === "string") payload.originalColour = carData.originalColour.trim();
-  if (typeof carData.description === "string") payload.description = carData.description.trim();
-
-  if (typeof carData.mileage === "number" && Number.isFinite(carData.mileage)) {
-    payload.mileage = Math.trunc(carData.mileage);
-  }
-
-  if (Array.isArray(carData.photos)) {
-    payload.photos = carData.photos.filter((p): p is string => typeof p === "string" && p.length > 0);
-  }
-
-  return payload;
-}
-
+// ---------------------------------------------------------------------------
+// carService
+// ---------------------------------------------------------------------------
 export const carService = {
+  /** Fetch the full list of cars (sorted newest first). */
   async getAllCars(): Promise<Car[]> {
-    try {
-      return await requestJson<Car[]>("/api/cars");
-    } catch (error) {
-      handleServiceError(error, OperationType.LIST, COLLECTION_NAME);
-      return [];
-    }
+    const records = await pb
+      .collection('cars')
+      .getFullList({ sort: '-created' });
+    return records.map(mapCar);
   },
 
-  subscribeToCars(callback: (cars: Car[]) => void) {
+  /**
+   * Subscribe to realtime car updates.
+   * Calls `callback` immediately with the initial list, then again on any
+   * create / update / delete event.
+   * Returns an unsubscribe function.
+   */
+  subscribeToCars(callback: (cars: Car[]) => void): () => void {
     let active = true;
 
-    const poll = async () => {
+    const refetch = async () => {
       if (!active) return;
-
-      try {
-        const cars = await requestJson<Car[]>("/api/cars");
-        callback(cars);
-      } catch {
-        callback([]);
-      }
+      const records = await pb
+        .collection('cars')
+        .getFullList({ sort: '-created' });
+      if (active) callback(records.map(mapCar));
     };
 
-    poll();
-    const interval = window.setInterval(poll, 5000);
+    // Initial fetch
+    refetch();
+
+    // Realtime subscription
+    let unsubFn: (() => Promise<void>) | null = null;
+    pb.collection('cars')
+      .subscribe('*', () => { refetch(); })
+      .then((fn) => { unsubFn = fn; })
+      .catch(console.error);
 
     return () => {
       active = false;
-      window.clearInterval(interval);
+      if (unsubFn) unsubFn();
     };
   },
 
+  /** Get a single car by id. */
   async getCarById(id: string): Promise<Car | null> {
     try {
-      const cars = await requestJson<Car[]>("/api/cars");
-      return cars.find((car) => car.id === id) ?? null;
-    } catch (error) {
-      handleServiceError(error, OperationType.GET, `${COLLECTION_NAME}/${id}`);
+      const record = await pb.collection('cars').getOne(id);
+      return mapCar(record);
+    } catch {
       return null;
     }
   },
 
-  async createCar(carData: Partial<Car>): Promise<string> {
-    const payload = sanitizeCarData(carData);
-
-    try {
-      const created = await requestJson<Car>("/api/cars", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      return created.id;
-    } catch (error) {
-      handleServiceError(error, OperationType.CREATE, COLLECTION_NAME);
-      return "";
+  /**
+   * Create a new car listing.
+   * `photoFiles` are new File objects to upload.
+   */
+  async createCar(
+    carData: Partial<Car>,
+    photoFiles: File[] = []
+  ): Promise<string> {
+    const fd = buildCarFormData(carData, photoFiles);
+    if (pb.authStore.model?.id) {
+      fd.append('created_by', pb.authStore.model.id);
     }
+    const record = await pb.collection('cars').create(fd);
+    return record.id;
   },
 
-  async updateCar(id: string, carData: Partial<Car>): Promise<void> {
-    const payload = sanitizeCarData(carData);
-
-    try {
-      await requestJson(`/api/cars/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } catch (error) {
-      handleServiceError(error, OperationType.UPDATE, `${COLLECTION_NAME}/${id}`);
+  /**
+   * Update an existing car listing.
+   * `photoFiles`  — new File objects to append.
+   * `removePhotoFilenames` — existing PB filenames to delete.
+   */
+  async updateCar(
+    id: string,
+    carData: Partial<Car>,
+    photoFiles: File[] = [],
+    removePhotoFilenames: string[] = []
+  ): Promise<void> {
+    const fd = buildCarFormData(carData, photoFiles);
+    for (const fn of removePhotoFilenames) {
+      fd.append('photos-', fn);
     }
+    await pb.collection('cars').update(id, fd);
   },
 
   async deleteCar(id: string): Promise<void> {
-    try {
-      await requestJson(`/api/cars/${id}`, { method: "DELETE" });
-    } catch (error) {
-      handleServiceError(error, OperationType.DELETE, `${COLLECTION_NAME}/${id}`);
-    }
-  },
-
-  async checkIfAdmin(): Promise<boolean> {
-    try {
-      const result = await requestJson<{ isAdmin: boolean }>("/api/admins/me");
-      return result.isAdmin;
-    } catch {
-      return false;
-    }
-  },
-
-  async bootstrapAdmin(): Promise<void> {
-    await requestJson("/api/admins/bootstrap", {
-      method: "POST",
-    });
+    await pb.collection('cars').delete(id);
   },
 };
+
+// ---------------------------------------------------------------------------
+// Helper: build FormData from car fields
+// ---------------------------------------------------------------------------
+function buildCarFormData(carData: Partial<Car>, photoFiles: File[]): FormData {
+  const fd = new FormData();
+
+  if (typeof carData.make === 'string') fd.append('make', carData.make.trim());
+  if (typeof carData.model === 'string') fd.append('model', carData.model.trim());
+  if (typeof carData.year === 'number') fd.append('year', String(Math.trunc(carData.year)));
+  if (typeof carData.price === 'number') fd.append('price', String(carData.price));
+  if (typeof carData.status === 'string') fd.append('status', carData.status);
+  if (typeof carData.engine === 'string') fd.append('engine', carData.engine.trim());
+  if (typeof carData.originalColour === 'string')
+    fd.append('original_colour', carData.originalColour.trim());
+  if (typeof carData.description === 'string')
+    fd.append('description', carData.description.trim());
+  if (typeof carData.mileage === 'number')
+    fd.append('mileage', String(Math.trunc(carData.mileage)));
+
+  for (const file of photoFiles) {
+    fd.append('photos', file);
+  }
+
+  return fd;
+}

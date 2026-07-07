@@ -1,82 +1,68 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-import { useAuthSession } from "../../lib/auth-client";
-import { passwordResetService } from "../../services/passwordResetService";
-import "./auth.css";
+import { FormEvent, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { confirmPasswordReset } from '../../lib/auth-client';
+import './auth.css';
 
-export default function ForcePasswordResetPage() {
-  const session = useAuthSession();
+/**
+ * Confirm Password Reset Page
+ *
+ * PocketBase sends an email containing a link to this page with a `?token=…`
+ * query parameter. The user sets their new password here.
+ *
+ * Route: /auth/confirm-reset
+ */
+export default function ConfirmPasswordResetPage() {
   const navigate = useNavigate();
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [checking, setChecking] = useState(true);
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (session.isPending || !session.data?.user) {
-      return;
-    }
-
-    passwordResetService.getMyResetRequirement().then((result) => {
-      if (!result.required) {
-        navigate("/", { replace: true });
-        return;
-      }
-
-      setChecking(false);
-    });
-  }, [session.isPending, session.data?.user, navigate]);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
+    if (!token) {
+      toast.error('Invalid or missing reset token. Please request a new reset link.');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
-      toast.error("New passwords do not match");
+      toast.error('Passwords do not match');
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters");
+      toast.error('Password must be at least 8 characters');
       return;
     }
 
     setSubmitting(true);
-
-    await passwordResetService.changePassword(currentPassword, newPassword);
-    await passwordResetService.completeMyReset();
-
-    setSubmitting(false);
-    toast.success("Password updated successfully");
-    navigate("/", { replace: true });
+    try {
+      await confirmPasswordReset(token, newPassword, confirmPassword);
+      toast.success('Password updated! Please sign in with your new password.');
+      navigate('/auth/sign-in', { replace: true });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Reset failed. The link may have expired.';
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (session.isPending || checking) {
+  if (!token) {
     return (
       <div className="auth-page">
         <div className="auth-card">
           <div className="auth-brand">
-            <p className="auth-kicker">Security Check</p>
-            <h1 className="auth-title">Verifying</h1>
+            <p className="auth-kicker">Password Reset</p>
+            <h1 className="auth-title">Invalid Link</h1>
           </div>
-          <p>Checking your reset requirement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session.data?.user) {
-    return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <div className="auth-brand">
-            <p className="auth-kicker">Access Required</p>
-            <h1 className="auth-title">Sign In</h1>
-          </div>
-          <p>You need to sign in first.</p>
+          <p>This reset link is invalid or has expired.</p>
           <p>
-            Continue to <Link to="/auth/sign-in">sign in</Link>
+            <Link to="/auth/forgot-password">Request a new reset link</Link>
           </p>
         </div>
       </div>
@@ -91,20 +77,11 @@ export default function ForcePasswordResetPage() {
           <h1 className="auth-title">Reset Password</h1>
         </div>
 
-        <p style={{ marginBottom: "12px" }}>
-          Your account is flagged for a required password update. Please set a new password now.
+        <p style={{ marginBottom: '12px' }}>
+          Enter your new password below.
         </p>
 
         <form onSubmit={onSubmit}>
-          <label>Current Password</label>
-          <input
-            required
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Enter current password"
-          />
-
           <label>New Password</label>
           <input
             required
@@ -112,6 +89,7 @@ export default function ForcePasswordResetPage() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Minimum 8 characters"
+            minLength={8}
           />
 
           <label>Confirm New Password</label>
@@ -124,7 +102,7 @@ export default function ForcePasswordResetPage() {
           />
 
           <button type="submit" disabled={submitting}>
-            {submitting ? "Updating..." : "Set New Password"}
+            {submitting ? 'Updating...' : 'Set New Password'}
           </button>
         </form>
       </div>
