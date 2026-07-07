@@ -1,0 +1,9 @@
+# nixpacks.toml
+# Explicitly configure build & start for this Vite SPA.
+# This overrides any start command set in the Coolify UI.
+
+[phases.build]
+cmds = ["pnpm run build"]
+
+[start]
+cmd = "caddy run --config /assets/Caddyfile --adapter caddyfile"
