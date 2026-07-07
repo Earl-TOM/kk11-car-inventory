@@ -32,19 +32,16 @@ export const accessService = {
     await pb.collection('allowed_accounts').delete(id);
   },
 
-  /** Read signups_enabled from app_settings. */
   async getSignupSettings(): Promise<{ enabled: boolean }> {
-    const record = await pb
-      .collection('app_settings')
-      .getFirstListItem('');
-    return { enabled: record.signups_enabled ?? false };
+    const result = await pb.collection('app_settings').getList(1, 1);
+    if (!result.items.length) return { enabled: false };
+    return { enabled: result.items[0].signups_enabled ?? false };
   },
 
-  /** Toggle signups_enabled in app_settings. */
   async updateSignupSettings(enabled: boolean): Promise<{ enabled: boolean }> {
-    const record = await pb
-      .collection('app_settings')
-      .getFirstListItem('');
+    const result = await pb.collection('app_settings').getList(1, 1);
+    if (!result.items.length) throw new Error('No app_settings record found');
+    const record = result.items[0];
     const updated = await pb
       .collection('app_settings')
       .update(record.id, { signups_enabled: enabled });

@@ -32,10 +32,11 @@ function mapSettings(record: RecordModel): SiteSettings {
 export const settingsService = {
   /** Fetch site settings (public & admin both read the same record). */
   async getPublicSettings(): Promise<SiteSettings> {
-    const record = await pb
+    const result = await pb
       .collection('app_settings')
-      .getFirstListItem('');
-    return mapSettings(record);
+      .getList(1, 1);
+    if (!result.items.length) throw new Error('No app_settings record found');
+    return mapSettings(result.items[0]);
   },
 
   async getAdminSiteSettings(): Promise<SiteSettings> {
@@ -51,9 +52,11 @@ export const settingsService = {
     logoFile?: File | null,
     faviconFile?: File | null
   ): Promise<SiteSettings> {
-    const record = await pb
+    const result = await pb
       .collection('app_settings')
-      .getFirstListItem('');
+      .getList(1, 1);
+    if (!result.items.length) throw new Error('No app_settings record found');
+    const record = result.items[0];
 
     const fd = new FormData();
 
