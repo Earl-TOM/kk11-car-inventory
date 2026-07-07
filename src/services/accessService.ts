@@ -19,6 +19,20 @@ export const accessService = {
     return records.map(mapAccount);
   },
 
+  async listUsers(): Promise<import('../types').User[]> {
+    const records = await pb.collection('users').getFullList({ sort: '-created' });
+    return records.map(r => ({
+      id: r.id,
+      name: r.name ?? r.username ?? '',
+      email: r.email ?? '',
+      created: r.created,
+    }));
+  },
+
+  async removeUser(id: string): Promise<void> {
+    await pb.collection('users').delete(id);
+  },
+
   async addAllowedAccount(email: string): Promise<AllowedAccount> {
     const data: Record<string, string> = { email };
     if (pb.authStore.model?.id) {

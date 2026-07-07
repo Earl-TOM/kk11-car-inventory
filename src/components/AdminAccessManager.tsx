@@ -1,12 +1,13 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { accessService } from '../services/accessService';
-import { AllowedAccount } from '../types';
-import { ShieldPlus, Trash2 } from 'lucide-react';
+import { AllowedAccount, User } from '../types';
+import { ShieldPlus, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminAccessManager() {
   const [email, setEmail] = useState('');
   const [items, setItems] = useState<AllowedAccount[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [signupsEnabled, setSignupsEnabled] = useState<boolean | null>(null);
   const [savingToggle, setSavingToggle] = useState(false);
@@ -14,13 +15,15 @@ export default function AdminAccessManager() {
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const loadItems = async () => {
-    const [accounts, settings] = await Promise.all([
+    const [accounts, settings, userList] = await Promise.all([
       accessService.listAllowedAccounts(),
       accessService.getSignupSettings(),
+      accessService.listUsers(),
     ]);
 
     setItems(accounts);
     setSignupsEnabled(settings.enabled);
+    setUsers(userList);
   };
 
   useEffect(() => {
@@ -63,81 +66,140 @@ export default function AdminAccessManager() {
     toast.success('Approved account removed');
   };
 
+  const onRemoveUser = async (user: User) => {
+    const confirmed = window.confirm(`Permanently delete user ${user.email}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setRemovingId(user.id);
+    await accessService.removeUser(user.id);
+    await loadItems();
+    setRemovingId(null);
+    toast.success('User deleted');
+  };
+
   return (
-    <section className="mb-12 border-2 border-art-black bg-white p-6 brutalist-shadow">
-      <div className="mb-4 flex items-center gap-2">
-        <ShieldPlus size={16} className="text-art-orange" />
-        <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/70">
-          Account Access Control
-        </h3>
-      </div>
-
-      <p className="mb-4 border border-art-black/20 bg-art-beige px-3 py-2 font-serif text-sm text-art-black/80">
-        Approved emails can create accounts only when public signup is enabled, and when signup is disabled the signup form is hidden.
-      </p>
-
-      <div className="mb-6 flex flex-col gap-3 border-2 border-art-black bg-art-beige p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/50">
-            Public Signup
-          </p>
-          <p className="mt-1 font-serif text-sm text-art-black">
-            {signupsEnabled ? 'Enabled' : 'Disabled'}
-          </p>
+    <>
+      <section className="mb-8 border-2 border-art-black bg-white p-6 brutalist-shadow">
+        <div className="mb-4 flex items-center gap-2">
+          <ShieldPlus size={16} className="text-art-orange" />
+          <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/70">
+            Account Access Control
+          </h3>
         </div>
-        <button
-          type="button"
-          onClick={onToggleSignups}
-          disabled={savingToggle || signupsEnabled === null}
-          className="border-2 border-art-black bg-art-black px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
-        >
-          {savingToggle
-            ? 'Saving...'
-            : signupsEnabled
-              ? 'Disable Signups'
-              : 'Enable Signups'}
-        </button>
-      </div>
 
-      <form onSubmit={onSubmit} className="mb-4 flex flex-col gap-3 sm:flex-row">
-        <input
-          type="email"
-          required
-          placeholder="user@company.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border-2 border-art-black bg-white px-4 py-3 font-serif text-sm outline-none focus:border-art-orange"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="border-2 border-art-black bg-art-black px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
-        >
-          {loading ? 'Saving...' : 'Approve Email'}
-        </button>
-      </form>
+        <p className="mb-4 border border-art-black/20 bg-art-beige px-3 py-2 font-serif text-sm text-art-black/80">
+          Approved emails can create accounts only when public signup is enabled, and when signup is disabled the signup form is hidden.
+        </p>
 
-      <div className="space-y-2">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between border border-art-black/20 px-3 py-2">
-            <span className="font-serif text-sm text-art-black">{item.email}</span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-art-black/40">
-                Approved
-              </span>
-              <button
-                type="button"
-                onClick={() => onRemoveApprovedAccount(item)}
-                disabled={removingId === item.id}
-                className="border border-art-black px-2 py-1 text-art-black transition-all hover:bg-art-orange hover:text-white disabled:opacity-50"
-                aria-label={`Remove ${item.email}`}
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
+        <div className="mb-6 flex flex-col gap-3 border-2 border-art-black bg-art-beige p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/50">
+              Public Signup
+            </p>
+            <p className="mt-1 font-serif text-sm text-art-black">
+              {signupsEnabled ? 'Enabled' : 'Disabled'}
+            </p>
           </div>
-        ))}
-      </div>
-    </section>
+          <button
+            type="button"
+            onClick={onToggleSignups}
+            disabled={savingToggle || signupsEnabled === null}
+            className="border-2 border-art-black bg-art-black px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
+          >
+            {savingToggle
+              ? 'Saving...'
+              : signupsEnabled
+                ? 'Disable Signups'
+                : 'Enable Signups'}
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="mb-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            type="email"
+            required
+            placeholder="user@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border-2 border-art-black bg-white px-4 py-3 font-serif text-sm outline-none focus:border-art-orange"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="border-2 border-art-black bg-art-black px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-art-orange disabled:opacity-50"
+          >
+            {loading ? 'Saving...' : 'Approve Email'}
+          </button>
+        </form>
+
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between border border-art-black/20 px-3 py-2">
+              <span className="font-serif text-sm text-art-black">{item.email}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-art-black/40">
+                  Approved
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveApprovedAccount(item)}
+                  disabled={removingId === item.id}
+                  className="border border-art-black px-2 py-1 text-art-black transition-all hover:bg-art-orange hover:text-white disabled:opacity-50"
+                  aria-label={`Remove ${item.email}`}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {items.length === 0 && (
+            <p className="font-serif text-sm text-art-black/50 py-2">No approved emails found.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="mb-12 border-2 border-art-black bg-white p-6 brutalist-shadow">
+        <div className="mb-4 flex items-center gap-2">
+          <Users size={16} className="text-art-orange" />
+          <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-art-black/70">
+            Registered Users
+          </h3>
+        </div>
+
+        <p className="mb-4 font-serif text-sm text-art-black/80">
+          Users who have actively created an account.
+        </p>
+
+        <div className="space-y-2">
+          {users.map((user) => (
+            <div key={user.id} className="flex items-center justify-between border border-art-black/20 px-3 py-2">
+              <div>
+                <span className="font-serif text-sm text-art-black block">{user.email}</span>
+                {user.name && user.name !== user.email && (
+                  <span className="font-mono text-[10px] text-art-black/50">{user.name}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-art-black/40">
+                  Registered
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveUser(user)}
+                  disabled={removingId === user.id}
+                  className="border border-art-black px-2 py-1 text-art-black transition-all hover:bg-red-500 hover:text-white disabled:opacity-50"
+                  aria-label={`Remove user ${user.email}`}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {users.length === 0 && (
+            <p className="font-serif text-sm text-art-black/50 py-2">No registered users found.</p>
+          )}
+        </div>
+      </section>
+    </>
   );
 }

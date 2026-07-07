@@ -40,6 +40,16 @@ export interface AllowedAccount {
 }
 
 /**
+ * Mirrors a record in the `users` collection.
+ */
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  created: string;
+}
+
+/**
  * Mirrors the `app_settings` collection.
  * A single record holds all site configuration.
  */
