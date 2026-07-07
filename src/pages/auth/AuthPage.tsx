@@ -1,15 +1,16 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { signIn, signUp, requestPasswordReset } from '../../lib/auth-client';
+import { signIn, signUp, requestPasswordReset, confirmPasswordReset } from '../../lib/auth-client';
 import { settingsService } from '../../services/settingsService';
 import './auth.css';
 
-type AuthPath = 'sign-in' | 'sign-up' | 'forgot-password';
-const ALLOWED: Set<string> = new Set(['sign-in', 'sign-up', 'forgot-password']);
+type AuthPath = 'sign-in' | 'sign-up' | 'forgot-password' | 'reset-password';
+const ALLOWED: Set<string> = new Set(['sign-in', 'sign-up', 'forgot-password', 'reset-password']);
 
 export default function AuthPage() {
   const { path } = useParams<{ path: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const requestedPath = path || 'sign-in';
@@ -19,6 +20,7 @@ export default function AuthPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [signupsEnabled, setSignupsEnabled] = useState<boolean | null>(null);
@@ -76,6 +78,36 @@ export default function AuthPage() {
       setEmail('');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to send reset email';
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Reset Password (from email link)
+  // -------------------------------------------------------------------------
+  const handleResetPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    const token = searchParams.get('token');
+    if (!token) {
+      toast.error('Invalid or missing reset token');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      await confirmPasswordReset(token, password, passwordConfirm);
+      toast.success('Password updated! Please sign in with your new password.');
+      navigate('/auth/sign-in', { replace: true });
+      setPassword('');
+      setPasswordConfirm('');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to reset password';
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -169,6 +201,48 @@ export default function AuthPage() {
           <p style={{ marginTop: '14px' }}>
             Remembered your password? <Link to="/auth/sign-in">Go to sign in</Link>
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Reset Password form
+  // -------------------------------------------------------------------------
+  if (authPath === 'reset-password') {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <div className="auth-brand">
+            <p className="auth-kicker">Account Access</p>
+            <h1 className="auth-title">Set New Password</h1>
+          </div>
+          <p style={{ marginBottom: '12px' }}>
+            Create a new password for your account.
+          </p>
+          <form onSubmit={handleResetPassword}>
+            <label>New Password</label>
+            <input
+              required
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min 8 characters"
+              minLength={8}
+            />
+            <label>Confirm Password</label>
+            <input
+              required
+              type="password"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              placeholder="••••••••"
+              minLength={8}
+            />
+            <button type="submit" disabled={submitting}>
+              {submitting ? 'Updating...' : 'Update Password'}
+            </button>
+          </form>
         </div>
       </div>
     );
