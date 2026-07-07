@@ -1,5 +1,5 @@
 import PocketBase from 'pocketbase';
 
 export const pb = new PocketBase(
-  import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090'
+  import.meta.env.VITE_POCKETBASE_URL || 'https://kk11-pbdb.lifutilabs.com'
 );
