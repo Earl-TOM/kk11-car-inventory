@@ -3,6 +3,23 @@ import { pb } from '../lib/pocketbase';
 import { SiteSettings, SiteSettingsUpdate } from '../types';
 
 // ---------------------------------------------------------------------------
+// Defaults — used when no app_settings record exists yet
+// ---------------------------------------------------------------------------
+const DEFAULT_SETTINGS: SiteSettings = {
+  id: '',
+  siteName: 'AutoTrade',
+  siteSubtitle: 'Inventory Management',
+  heroKicker: 'Premium Selection',
+  heroTitle: 'Find Your Perfect Vehicle',
+  heroDescription: 'Browse our curated inventory of quality vehicles.',
+  footerText: '',
+  whatsappNumber: '',
+  signupsEnabled: false,
+  logoUrl: '',
+  faviconUrl: '',
+};
+
+// ---------------------------------------------------------------------------
 // Mapper: raw PocketBase record → SiteSettings
 // ---------------------------------------------------------------------------
 function mapSettings(record: RecordModel): SiteSettings {
@@ -27,16 +44,22 @@ function mapSettings(record: RecordModel): SiteSettings {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: get the single app_settings record, or null if none exists
+// ---------------------------------------------------------------------------
+async function fetchSettingsRecord(): Promise<RecordModel | null> {
+  const result = await pb.collection('app_settings').getList(1, 1);
+  return result.items[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
 // settingsService
 // ---------------------------------------------------------------------------
 export const settingsService = {
-  /** Fetch site settings (public & admin both read the same record). */
+  /** Fetch site settings. Returns defaults if no record exists yet. */
   async getPublicSettings(): Promise<SiteSettings> {
-    const result = await pb
-      .collection('app_settings')
-      .getList(1, 1);
-    if (!result.items.length) throw new Error('No app_settings record found');
-    return mapSettings(result.items[0]);
+    const record = await fetchSettingsRecord();
+    if (!record) return DEFAULT_SETTINGS;
+    return mapSettings(record);
   },
 
   async getAdminSiteSettings(): Promise<SiteSettings> {
@@ -44,7 +67,7 @@ export const settingsService = {
   },
 
   /**
-   * Update site settings.
+   * Update (or create on first run) site settings.
    * `logoFile` / `faviconFile` are optional File objects for brand assets.
    */
   async updateAdminSiteSettings(
@@ -52,12 +75,6 @@ export const settingsService = {
     logoFile?: File | null,
     faviconFile?: File | null
   ): Promise<SiteSettings> {
-    const result = await pb
-      .collection('app_settings')
-      .getList(1, 1);
-    if (!result.items.length) throw new Error('No app_settings record found');
-    const record = result.items[0];
-
     const fd = new FormData();
 
     if (payload.siteName !== undefined) fd.append('site_name', payload.siteName);
@@ -73,9 +90,16 @@ export const settingsService = {
     if (logoFile) fd.append('logo', logoFile);
     if (faviconFile) fd.append('favicon', faviconFile);
 
-    const updated = await pb
-      .collection('app_settings')
-      .update(record.id, fd);
+    const existing = await fetchSettingsRecord();
+
+    let updated: RecordModel;
+    if (existing) {
+      // Update existing record
+      updated = await pb.collection('app_settings').update(existing.id, fd);
+    } else {
+      // First-time setup: create the record
+      updated = await pb.collection('app_settings').create(fd);
+    }
 
     return mapSettings(updated);
   },

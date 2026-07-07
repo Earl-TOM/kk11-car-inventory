@@ -40,11 +40,16 @@ export const accessService = {
 
   async updateSignupSettings(enabled: boolean): Promise<{ enabled: boolean }> {
     const result = await pb.collection('app_settings').getList(1, 1);
-    if (!result.items.length) throw new Error('No app_settings record found');
-    const record = result.items[0];
-    const updated = await pb
-      .collection('app_settings')
-      .update(record.id, { signups_enabled: enabled });
+    let updated;
+    if (result.items.length) {
+      updated = await pb
+        .collection('app_settings')
+        .update(result.items[0].id, { signups_enabled: enabled });
+    } else {
+      updated = await pb
+        .collection('app_settings')
+        .create({ signups_enabled: enabled });
+    }
     return { enabled: updated.signups_enabled ?? false };
   },
 };
