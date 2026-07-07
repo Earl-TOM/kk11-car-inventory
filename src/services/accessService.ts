@@ -33,9 +33,14 @@ export const accessService = {
   },
 
   async getSignupSettings(): Promise<{ enabled: boolean }> {
-    const result = await pb.collection('app_settings').getList(1, 1);
-    if (!result.items.length) return { enabled: false };
-    return { enabled: result.items[0].signups_enabled ?? false };
+    try {
+      const result = await pb.collection('app_settings').getList(1, 1);
+      if (!result.items.length) return { enabled: false };
+      return { enabled: result.items[0].signups_enabled ?? false };
+    } catch (error) {
+      console.error('Failed to fetch signup settings:', error);
+      return { enabled: false };
+    }
   },
 
   async updateSignupSettings(enabled: boolean): Promise<{ enabled: boolean }> {

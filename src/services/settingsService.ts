@@ -47,8 +47,13 @@ function mapSettings(record: RecordModel): SiteSettings {
 // Helper: get the single app_settings record, or null if none exists
 // ---------------------------------------------------------------------------
 async function fetchSettingsRecord(): Promise<RecordModel | null> {
-  const result = await pb.collection('app_settings').getList(1, 1);
-  return result.items[0] ?? null;
+  try {
+    const result = await pb.collection('app_settings').getList(1, 1);
+    return result.items[0] ?? null;
+  } catch (error) {
+    console.error('Failed to fetch app_settings:', error);
+    return null; // Fallback to null so UI can use DEFAULT_SETTINGS instead of crashing
+  }
 }
 
 // ---------------------------------------------------------------------------
